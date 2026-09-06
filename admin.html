@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rythor Deals - Painel Administrativo</title>
+    <link rel="stylesheet" href="style.css">
+    <meta name="robots" content="noindex, nofollow">
+</head>
+<body class="pagina-auth" style="background-color: var(--bg-main); color: var(--text-light);">
+
+    <div class="auth-caixa">
+        <!-- TELA DE LOGIN -->
+        <div id="login-section">
+            <h2>Rythor Deals | Admin</h2>
+            <div class="auth-campo">
+                <label for="usuario">Usuário:</label>
+                <input type="text" id="usuario" autocomplete="username" placeholder="Digite seu usuário">
+            </div>
+            <div class="auth-campo">
+                <label for="senha">Senha:</label>
+                <div class="senha-wrapper">
+                    <input type="password" id="senha" autocomplete="current-password" placeholder="Digite sua senha">
+                    <button type="button" class="toggle-senha" id="toggle-senha">mostrar</button>
+                </div>
+            </div>
+            <button class="btn-purple-glow" style="width:100%; border-radius:6px;" id="btn-login" onclick="fazerLogin()">Entrar no Sistema</button>
+        </div>
+
+        <!-- TELA DE CADASTRO DE PRODUTOS (Protegida) -->
+        <div id="admin-section" class="hidden">
+            <h3>Cadastrar Novo Produto</h3>
+            <div class="auth-campo">
+                <label for="nomeProduto">Nome do Produto:</label>
+                <input type="text" id="nomeProduto" placeholder="Ex: Teclado Mecânico RGB" maxlength="120">
+            </div>
+            <div class="auth-campo">
+                <label for="precoProduto">Preço:</label>
+                <input type="text" id="precoProduto" placeholder="Ex: 349,90">
+            </div>
+            <div class="auth-campo">
+                <label for="categoriaProduto">Categoria:</label>
+                <input type="text" id="categoriaProduto" placeholder="Ex: Periféricos" maxlength="60">
+            </div>
+            <div class="auth-campo">
+                <label for="lojaProduto">Loja de origem do link:</label>
+                <select id="lojaProduto">
+                    <option value="amazon">Amazon</option>
+                    <option value="aliexpress">AliExpress</option>
+                    <option value="shopee">Shopee</option>
+                    <option value="kabum">Kabum</option>
+                    <option value="outro">Outra loja</option>
+                </select>
+            </div>
+            <div class="auth-campo">
+                <label for="linkProduto">Link de Afiliado:</label>
+                <input type="text" id="linkProduto" placeholder="https://...">
+            </div>
+            <button class="btn-purple-glow" style="width:100%; border-radius:6px;" id="btn-salvar" onclick="cadastrarProduto()">Salvar Produto</button>
+            <button class="btn-dark-bordered" style="width:100%; border-radius:6px; margin-top: 10px;" onclick="logout()">Sair</button>
+
+            <div class="lista-produtos-admin" id="lista-produtos-admin">
+                <p style="text-align:center; color: var(--text-muted);">Carregando produtos cadastrados...</p>
+            </div>
+        </div>
+
+        <div id="mensagem" style="text-align:center; margin-top:15px; font-size:14px;"></div>
+    </div>
+
+    <script>
+    const API_URL = 'https://rythor-deals-backend.onrender.com/api';
+    let tokenJwt = localStorage.getItem('token_rythor') || '';
+
+    // Escapa texto antes de injetar em innerHTML (evita XSS vindo de dados salvos)
+    function escapeHTML(valor) {
+        const div = document.createElement('div');
+        div.textContent = valor ?? '';
+        return div.innerHTML;
+    }
+
+    // Rótulo de exibição por loja (mantido em sincronia com o script.js público)
+    const ROTULO_LOJA = {
+        amazon: 'Amazon', aliexpress: 'AliExpress', shopee: 'Shopee', kabum: 'Kabum', outro: 'Outra loja'
+    };
+
+    // Decodifica o payload de um JWT sem validar assinatura (só para checar
+    // localmente se já expirou — a validação real sempre acontece no backend).
+    function payloadDoToken(token) {
+        try {
+            const partes = token.split('.');
+            if (partes.length !== 3) return null;
+            const json = decodeURIComponent(atob(partes[1].replace(/-/g, '+').replace(/_/g, '/'))
+                .split('').map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join(''));
+            return JSON.parse(json);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function tokenValido(token) {
+        if (!token) return false;
+        const payload = payloadDoToken(token);
+        if (payload && payload.exp) {
+            return payload.exp * 1000 > Date.now();
+        }
+        return true;
+    }
+
+    if (tokenValido(tokenJwt)) {
+        mostrarPainelAdmin();
+    } else if (tokenJwt) {
+        localStorage.removeItem('token_rythor');
+        tokenJwt = '';
+    }
+
+    document.getElementById('toggle-senha').addEventListener('click', (e) => {
+        const campoSenha = document.getElementById('senha');
+        const mostrando = campoSenha.type === 'text';
+        campoSenha.type = mostrando ? 'password' : 'text';
+        e.currentTarget.textContent = mostrando ? 'mostrar' : 'ocultar';
+    });
+
+    function definirCarregando(botao, carregando, textoNormal) {
+        botao.disabled = carregando;
+        botao.textContent = carregando ? 'Enviando...' : textoNormal;
+    }
+
+    async function fazerLogin() {
+        const usuario = document.getElementById('usuario').value.trim();
+        const senha = document.getElementById('senha').value;
+        const msg = document.getElementById('mensagem');
+        const botao = document.getElementById('btn-login');
+
+        if (!usuario || !senha) {
+            msg.style.color = '#f72585';
+            msg.innerText = 'Preencha usuário e senha.';
+            return;
+        }
+
+        definirCarregando(botao, true, 'Entrar no Sistema');
+
+        try {
+            const resposta = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario, senha })
+            });
+
+            const dados = await resposta.json().catch(() => ({}));
+
+            if (resposta.ok && dados.token) {
+                tokenJwt = dados.token;
+                localStorage.setItem('token_rythor', tokenJwt);
+                msg.style.color = '#4cc9f0';
+                msg.innerText = 'Login realizado com sucesso!';
+                document.getElementById('senha').value = '';
+                mostrarPainelAdmin();
+            } else {
+                msg.style.color = '#f72585';
+                msg.innerText = dados.erro || 'Usuário ou senha inválidos.';
+            }
+        } catch (err) {
+            msg.style.color = '#f72585';
+            msg.innerText = 'Erro de conexão com o servidor.';
+        } finally {
+            definirCarregando(botao, false, 'Entrar no Sistema');
+        }
+    }
+
+    function mostrarPainelAdmin() {
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('admin-section').classList.remove('hidden');
+        document.getElementById('mensagem').innerText = '';
+        carregarProdutosAdmin();
+    }
+
+    function logout() {
+        localStorage.removeItem('token_rythor');
+        tokenJwt = '';
+        document.getElementById('admin-section').classList.add('hidden');
+        document.getElementById('login-section').classList.remove('hidden');
+        document.getElementById('mensagem').innerText = '';
+    }
+
+    async function fetchAutenticado(url, opcoes = {}) {
+        const resposta = await fetch(url, {
+            ...opcoes,
+            headers: {
+                ...(opcoes.headers || {}),
+                'Authorization': `Bearer ${tokenJwt}`
+            }
+        });
+        if (resposta.status === 401 || resposta.status === 403) {
+            logout();
+            const msg = document.getElementById('mensagem');
+            msg.style.color = '#f72585';
+            msg.innerText = 'Sessão expirada. Faça login novamente.';
+        }
+        return resposta;
+    }
+
+    async function cadastrarProduto() {
+        const nome = document.getElementById('nomeProduto').value.trim();
+        const precoTexto = document.getElementById('precoProduto').value.trim();
+        const categoria = document.getElementById('categoriaProduto').value.trim();
+        const loja = document.getElementById('lojaProduto').value;
+        const linkAfiliado = document.getElementById('linkProduto').value.trim();
+        const msg = document.getElementById('mensagem');
+        const botao = document.getElementById('btn-salvar');
+
+        if (!nome || !precoTexto || !categoria || !linkAfiliado) {
+            msg.style.color = '#f72585';
+            msg.innerText = 'Preencha todos os campos antes de salvar.';
+            return;
+        }
+
+        try {
+            const urlValida = new URL(linkAfiliado);
+            if (urlValida.protocol !== 'https:' && urlValida.protocol !== 'http:') throw new Error();
+        } catch (e) {
+            msg.style.color = '#f72585';
+            msg.innerText = 'O link de afiliado precisa ser uma URL válida (http/https).';
+            return;
+        }
+
+        definirCarregando(botao, true, 'Salvar Produto');
+
+        try {
+            const resposta = await fetchAutenticado(`${API_URL}/produtos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, preco: precoTexto, categoria, loja, linkAfiliado })
+            });
+
+            const dados = await resposta.json().catch(() => ({}));
+
+            if (resposta.ok) {
+                msg.style.color = '#4cc9f0';
+                msg.innerText = dados.mensagem || 'Produto cadastrado com sucesso!';
+                document.getElementById('nomeProduto').value = '';
+                document.getElementById('precoProduto').value = '';
+                document.getElementById('categoriaProduto').value = '';
+                document.getElementById('linkProduto').value = '';
+                carregarProdutosAdmin();
+            } else if (resposta.status !== 401 && resposta.status !== 403) {
+                msg.style.color = '#f72585';
+                msg.innerText = dados.erro || 'Erro ao cadastrar produto.';
+            }
+        } catch (err) {
+            msg.style.color = '#f72585';
+            msg.innerText = 'Erro ao enviar dados para o servidor.';
+        } finally {
+            definirCarregando(botao, false, 'Salvar Produto');
+        }
+    }
+
+    // Lista os produtos já cadastrados dentro do próprio painel, com opção
+    // de excluir. NOTA: o campo "loja" só existirá em produtos cadastrados
+    // depois dessa atualização — produtos antigos aparecem como "Outra loja".
+    async function carregarProdutosAdmin() {
+        const container = document.getElementById('lista-produtos-admin');
+        try {
+            const resposta = await fetch(`${API_URL}/produtos`);
+            const dados = await resposta.json();
+
+            if (!dados.produtos || dados.produtos.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color: var(--text-muted);">Nenhum produto cadastrado ainda.</p>';
+                return;
+            }
+
+            container.innerHTML = '<h4 style="text-align:center;">Produtos cadastrados</h4>';
+            dados.produtos.forEach(produto => {
+                const rotuloLoja = ROTULO_LOJA[(produto.loja || 'outro').toLowerCase()] || 'Outra loja';
+                const linha = document.createElement('div');
+                linha.className = 'item-produto-admin';
+                linha.innerHTML = `
+                    <span>${escapeHTML(produto.nome)} — ${escapeHTML(String(produto.preco))} <span style="color: var(--text-muted);">(${escapeHTML(rotuloLoja)})</span></span>
+                    <button class="btn-excluir" data-id="${escapeHTML(produto._id || produto.id || '')}">excluir</button>
+                `;
+                container.appendChild(linha);
+            });
+
+            container.querySelectorAll('.btn-excluir').forEach(btn => {
+                btn.addEventListener('click', (e) => excluirProduto(e.currentTarget.dataset.id));
+            });
+        } catch (err) {
+            container.innerHTML = '<p style="text-align:center; color: #f72585;">Não foi possível carregar os produtos cadastrados.</p>';
+        }
+    }
+
+    // Exclusão depende de o backend expor DELETE /api/produtos/:id.
+    async function excluirProduto(id) {
+        if (!id) {
+            alert('Este produto não tem um identificador para exclusão — verifique se o backend retorna o campo "id" ou "_id".');
+            return;
+        }
+        if (!confirm('Excluir este produto da vitrine?')) return;
+
+        try {
+            const resposta = await fetchAutenticado(`${API_URL}/produtos/${id}`, { method: 'DELETE' });
+            if (resposta.ok) {
+                carregarProdutosAdmin();
+            } else if (resposta.status === 404 || resposta.status === 405) {
+                alert('O backend ainda não tem uma rota de exclusão (DELETE /api/produtos/:id). Peça para o desenvolvedor do backend adicionar essa rota.');
+            } else if (resposta.status !== 401 && resposta.status !== 403) {
+                alert('Erro ao excluir o produto.');
+            }
+        } catch (err) {
+            alert('Erro de conexão ao tentar excluir o produto.');
+        }
+    }
+    </script>
+</body>
+</html>

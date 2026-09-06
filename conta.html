@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rythor Deals | Minha Conta</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+</head>
+<body class="pagina-auth" style="background-color: var(--bg-main); color: var(--text-light);">
+
+    <div class="auth-caixa">
+        <h2>Minha Conta</h2>
+
+        <div class="auth-abas">
+            <button class="auth-aba active" id="aba-entrar" type="button">Entrar</button>
+            <button class="auth-aba" id="aba-cadastrar" type="button">Criar conta</button>
+        </div>
+
+        <!-- LOGIN DO CLIENTE -->
+        <div id="painel-entrar">
+            <div class="auth-campo">
+                <label for="email-login">E-mail:</label>
+                <input type="email" id="email-login" autocomplete="email" placeholder="voce@email.com">
+            </div>
+            <div class="auth-campo">
+                <label for="senha-login">Senha:</label>
+                <div class="senha-wrapper">
+                    <input type="password" id="senha-login" autocomplete="current-password" placeholder="Sua senha">
+                    <button type="button" class="toggle-senha" id="toggle-senha-login">mostrar</button>
+                </div>
+            </div>
+            <button class="btn-purple-glow" style="width:100%; border-radius:6px;" id="btn-entrar">Entrar</button>
+        </div>
+
+        <!-- CADASTRO DO CLIENTE -->
+        <div id="painel-cadastrar" class="hidden">
+            <div class="auth-campo">
+                <label for="nome-cadastro">Nome:</label>
+                <input type="text" id="nome-cadastro" autocomplete="name" placeholder="Seu nome" maxlength="80">
+            </div>
+            <div class="auth-campo">
+                <label for="email-cadastro">E-mail:</label>
+                <input type="email" id="email-cadastro" autocomplete="email" placeholder="voce@email.com">
+            </div>
+            <div class="auth-campo">
+                <label for="senha-cadastro">Senha:</label>
+                <div class="senha-wrapper">
+                    <input type="password" id="senha-cadastro" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+                    <button type="button" class="toggle-senha" id="toggle-senha-cadastro">mostrar</button>
+                </div>
+            </div>
+            <button class="btn-purple-glow" style="width:100%; border-radius:6px;" id="btn-cadastrar">Criar conta</button>
+        </div>
+
+        <!-- ÁREA LOGADA -->
+        <div id="painel-logado" class="hidden">
+            <p class="saudacao-conta" id="saudacao-cliente"></p>
+            <button class="btn-dark-bordered" style="width:100%; border-radius:6px; margin-top: 14px;" id="btn-sair-cliente">Sair da conta</button>
+        </div>
+
+        <div id="mensagem-conta" style="text-align:center; margin-top:15px; font-size:14px;"></div>
+        <a href="index.html" class="auth-link-voltar">&larr; Voltar para a vitrine</a>
+    </div>
+
+    <script>
+    const API_URL = 'https://rythor-deals-backend.onrender.com/api';
+
+    // Conta de CLIENTE — token guardado numa chave separada da do admin,
+    // então logar como cliente nunca dá acesso ao painel administrativo.
+    let tokenCliente = localStorage.getItem('token_cliente') || '';
+    let nomeCliente = localStorage.getItem('nome_cliente') || '';
+
+    const abaEntrar = document.getElementById('aba-entrar');
+    const abaCadastrar = document.getElementById('aba-cadastrar');
+    const painelEntrar = document.getElementById('painel-entrar');
+    const painelCadastrar = document.getElementById('painel-cadastrar');
+    const painelLogado = document.getElementById('painel-logado');
+    const msg = document.getElementById('mensagem-conta');
+
+    function mostrarMensagem(texto, tipo) {
+        msg.style.color = tipo === 'erro' ? '#f72585' : '#4cc9f0';
+        msg.innerText = texto;
+    }
+
+    function alternarAba(qual) {
+        const logando = qual === 'entrar';
+        abaEntrar.classList.toggle('active', logando);
+        abaCadastrar.classList.toggle('active', !logando);
+        painelEntrar.classList.toggle('hidden', !logando);
+        painelCadastrar.classList.toggle('hidden', logando);
+        msg.innerText = '';
+    }
+
+    abaEntrar.addEventListener('click', () => alternarAba('entrar'));
+    abaCadastrar.addEventListener('click', () => alternarAba('cadastrar'));
+
+    function alternarVisibilidadeSenha(idInput, idBotao) {
+        const campo = document.getElementById(idInput);
+        const botao = document.getElementById(idBotao);
+        botao.addEventListener('click', () => {
+            const mostrando = campo.type === 'text';
+            campo.type = mostrando ? 'password' : 'text';
+            botao.textContent = mostrando ? 'mostrar' : 'ocultar';
+        });
+    }
+    alternarVisibilidadeSenha('senha-login', 'toggle-senha-login');
+    alternarVisibilidadeSenha('senha-cadastro', 'toggle-senha-cadastro');
+
+    function emailValido(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function mostrarPainelLogado() {
+        painelEntrar.classList.add('hidden');
+        painelCadastrar.classList.add('hidden');
+        document.querySelector('.auth-abas').classList.add('hidden');
+        painelLogado.classList.remove('hidden');
+        document.getElementById('saudacao-cliente').textContent = nomeCliente
+            ? `Você está logado como ${nomeCliente}.`
+            : 'Você está logado.';
+    }
+
+    if (tokenCliente) {
+        mostrarPainelLogado();
+    }
+
+    document.getElementById('btn-sair-cliente').addEventListener('click', () => {
+        localStorage.removeItem('token_cliente');
+        localStorage.removeItem('nome_cliente');
+        tokenCliente = '';
+        nomeCliente = '';
+        painelLogado.classList.add('hidden');
+        document.querySelector('.auth-abas').classList.remove('hidden');
+        alternarAba('entrar');
+    });
+
+    document.getElementById('btn-entrar').addEventListener('click', async () => {
+        const email = document.getElementById('email-login').value.trim();
+        const senha = document.getElementById('senha-login').value;
+        const botao = document.getElementById('btn-entrar');
+
+        if (!emailValido(email) || !senha) {
+            mostrarMensagem('Informe um e-mail válido e sua senha.', 'erro');
+            return;
+        }
+
+        botao.disabled = true;
+        botao.textContent = 'Entrando...';
+        try {
+            const resposta = await fetch(`${API_URL}/clientes/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, senha })
+            });
+            const dados = await resposta.json().catch(() => ({}));
+
+            if (resposta.ok && dados.token) {
+                tokenCliente = dados.token;
+                nomeCliente = dados.nome || '';
+                localStorage.setItem('token_cliente', tokenCliente);
+                localStorage.setItem('nome_cliente', nomeCliente);
+                mostrarMensagem('Login realizado!', 'sucesso');
+                mostrarPainelLogado();
+            } else {
+                mostrarMensagem(dados.erro || 'E-mail ou senha inválidos.', 'erro');
+            }
+        } catch (err) {
+            mostrarMensagem('Erro de conexão com o servidor.', 'erro');
+        } finally {
+            botao.disabled = false;
+            botao.textContent = 'Entrar';
+        }
+    });
+
+    document.getElementById('btn-cadastrar').addEventListener('click', async () => {
+        const nome = document.getElementById('nome-cadastro').value.trim();
+        const email = document.getElementById('email-cadastro').value.trim();
+        const senha = document.getElementById('senha-cadastro').value;
+        const botao = document.getElementById('btn-cadastrar');
+
+        if (!nome || !emailValido(email) || senha.length < 6) {
+            mostrarMensagem('Preencha nome, e-mail válido e uma senha com pelo menos 6 caracteres.', 'erro');
+            return;
+        }
+
+        botao.disabled = true;
+        botao.textContent = 'Criando conta...';
+        try {
+            const resposta = await fetch(`${API_URL}/clientes/registrar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, email, senha })
+            });
+            const dados = await resposta.json().catch(() => ({}));
+
+            if (resposta.ok) {
+                mostrarMensagem('Conta criada! Você já pode entrar.', 'sucesso');
+                alternarAba('entrar');
+                document.getElementById('email-login').value = email;
+            } else {
+                mostrarMensagem(dados.erro || 'Não foi possível criar a conta.', 'erro');
+            }
+        } catch (err) {
+            mostrarMensagem('Erro de conexão com o servidor.', 'erro');
+        } finally {
+            botao.disabled = false;
+            botao.textContent = 'Criar conta';
+        }
+    });
+    </script>
+</body>
+</html>

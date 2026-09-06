@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rythor Deals | Cyber Tech Shop</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts: Pixelify Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+   
+</head>
+<body>
+
+    <!-- CABEÇALHO / NAVBAR -->
+    <header class="navbar">
+        <div class="nav-left">
+            <img src="Imagens/Logo do siste.png" alt="Logo Rosa Mística" class="logo-icon">
+            <span class="logo-name">RYTHOR<br><small style="color: var(--neon-purple); font-size: 0.7rem;"> TECH DEALS</small></span>
+        </div>
+        
+        <nav class="nav-links-container">
+            <a href="#" class="nav-item active">início</a>
+            <a href="#vitrine" class="nav-item">ofertas</a>
+            <a href="#categorias" class="nav-item">hardware</a>
+            <a href="#vantagens" class="nav-item">vantagens</a>
+        </nav>
+
+        <div class="nav-right">
+            <button class="cart-pill-btn" id="btn-cart">
+                🛒 carrinho <span id="cart-counter">0</span>
+            </button>
+            <button class="btn-outline-pill" id="btn-conta">minha conta</button>
+        </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="main-container">
+        
+        <!-- SEÇÃO HERO (DESTAQUE PRINCIPAL) -->
+        <section class="hero-section">
+            <div class="hero-text-content">
+                <span class="welcome-tag">SYS_OFFER: FLASH DEALS // 2026</span>
+                <h1>HARDWARE & GAMES<br><span class="purple-glow">COM PREÇO CYBER</span></h1>
+                <p>Os melhores componentes, placas de vídeo e periféricos importados com os menores preços da rede. Explore a vitrine e economize.</p>
+                
+                <div class="hero-cta-buttons">
+                    <a href="#vitrine" class="btn-purple-glow">ver promoções ⚡</a>
+                    <button class="btn-dark-bordered" id="btn-coupon">pegar cupom</button>
+                </div>
+            </div>
+
+            <!-- ESTATÍSTICAS DA LOJA -->
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <span class="stat-num">4.8K+</span>
+                    <span class="stat-label">ITENS VENDIDOS</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-num">99.4%</span>
+                    <span class="stat-label">APROVAÇÃO</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-num">24/7</span>
+                    <span class="stat-label">SUPORTE NEURAL</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEÇÃO DE VANTAGENS -->
+        <section class="features-section" id="vantagens">
+            <h3 class="section-title-center">POR QUE COMPRAR AQUI?</h3>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h4>ENVIO RÁPIDO</h4>
+                    <p>Logística otimizada para entrega direta na sua base com rastreio total.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h4>GARANTIA CYBER</h4>
+                    <p>Produtos testados e com garantia contra falhas de fabricação.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💎</div>
+                    <h4>MELHOR PREÇO</h4>
+                    <p>Monitoramento de mercado em tempo real para garantir o menor custo.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤝</div>
+                    <h4>COMUNIDADE ATIVA</h4>
+                    <p>Milhares de gamers e entusiastas trocando feedbacks reais.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- VITRINE DE PRODUTOS / OFERTAS -->
+        <section class="featured-section" id="vitrine">
+            <div class="featured-header">
+                <h3>DESTAQUES DA VITRINE</h3>
+                <div class="filter-pills">
+                    <button class="filter-tab active" data-filter="all">todos</button>
+                    <button class="filter-tab" data-filter="Hardware">hardware</button>
+                    <button class="filter-tab" data-filter="Periféricos">periféricos</button>
+                    <button class="filter-tab" data-filter="favoritos">♥ favoritos</button>
+                </div>
+            </div>
+
+            <!-- VISTO RECENTEMENTE -->
+            <div class="secao-vistos hidden" id="secao-vistos">
+                <h4 style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 10px;">visto recentemente</h4>
+                <div class="vistos-lista" id="vistos-lista"></div>
+            </div>
+
+            <div class="toolbar-vitrine">
+                <input type="text" id="busca-produto" class="search-input" placeholder="Buscar produto pelo nome...">
+                <select id="ordenar-produtos" class="sort-select">
+                    <option value="padrao">Ordenar: padrão</option>
+                    <option value="menor-preco">Menor preço</option>
+                    <option value="maior-preco">Maior preço</option>
+                </select>
+            </div>
+
+            <div class="gallery-grid" id="produtos-grid">
+                <!-- Os cards serão injetados e gerenciados dinamicamente via JavaScript -->
+            </div>
+        </section>
+
+        <!-- BANNER DE CHAMADA INFERIOR -->
+        <section class="cta-banner">
+            <div class="cta-content">
+                <div class="cta-icon-rocket">🚀</div>
+                <div>
+                    <h3>QUER ENCONTRAR OFERTAS EXCLUSIVAS?</h3>
+                    <p>Entre para o nosso canal secreto e receba alertas de queda de preço em tempo real.</p>
+                </div>
+            </div>
+           
+      <a href="https://whatsapp.com/channel/0029Vb8kCuf8F2pLCFb4qb05" target="_blank" style="background-color: #7e22ce; color: #fff; border: 1px solid #a855f7; padding: 12px 28px; border-radius: 6px; cursor: pointer; font-size: 1.05rem; text-decoration: none; display: inline-block; box-shadow: 0 0 15px rgba(168, 85, 247, 0.5); font-family: 'Pixelify Sans', sans-serif;">Ativar Alertas ⚡</a>
+        </section>
+
+    </main>
+
+    <!-- RODAPÉ -->
+    <footer class="footer-cyber">
+        <div class="footer-top">
+            <div class="footer-brand">
+                <div class="logo-name footer-logo">RYTHOR<br>TECH DEALS</div>
+                <p>A sua plataforma definitiva de achados tecnológicos e hardwares com estética dark/cyberpunk.</p>
+            </div>
+            
+            <div class="footer-col">
+                <h5>EXPLORE</h5>
+                <a href="#vitrine">Promoções</a>
+                <a href="#categorias">Placas de Vídeo</a>
+                <a href="#categorias">Periféricos</a>
+                <a href="#">Lançamentos</a>
+            </div>
+
+            <div class="footer-col">
+                <h5>SUPORTE</h5>
+                <a href="#">Central de Ajuda</a>
+                <a href="#">Rastreio</a>
+                <a href="#">Trocas e Devoluções</a>
+                <a href="#">Contato</a>
+            </div>
+
+            <div class="footer-col">
+                <h5>REDES</h5>
+                <div class="social-icons">
+                    <a href="#">🐦</a>
+                    <a href="#">📸</a>
+                    <a href="#">💬</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2026 Rythor Dals Tech Deals. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- SCRIPT JS -->
+    <script src="script.js"></script>
+</body>
+</html>
